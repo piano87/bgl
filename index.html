@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BGL Lehrer-Snake</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #38bdf8;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --snake: #a3e635;
+      --snake2: #65a30d;
+      --grid: rgba(255,255,255,0.055);
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(circle at top, #1e3a8a 0%, var(--bg) 48%, #020617 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      overflow-x: hidden;
+    }
+
+    .app {
+      width: min(960px, 100%);
+      display: grid;
+      grid-template-columns: minmax(320px, 640px) minmax(250px, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(17,24,39,.95), rgba(15,23,42,.95));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .game-card { padding: 16px; }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.45rem, 3vw, 2.25rem);
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: .95rem;
+    }
+
+    .question {
+      background: rgba(56,189,248,.1);
+      border: 1px solid rgba(56,189,248,.32);
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .teacher-label {
+      color: var(--muted);
+      font-size: .83rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    #teacherName {
+      font-weight: 850;
+      font-size: clamp(1.25rem, 3vw, 2rem);
+      line-height: 1.1;
+    }
+
+    #promptText {
+      color: #dbeafe;
+      margin-top: 6px;
+      font-size: .98rem;
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .hud div {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 14px;
+      padding: 9px 10px;
+      text-align: center;
+    }
+
+    .hud span {
+      display: block;
+      color: var(--muted);
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .hud strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 1.15rem;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      background: #020617;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.14);
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      background: #07111f;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      background: rgba(2,6,23,.72);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+      text-align: center;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .overlay-box {
+      max-width: 440px;
+      background: rgba(15,23,42,.95);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 22px;
+      padding: 22px;
+    }
+
+    .overlay h2 { margin: 0 0 8px; }
+    .overlay p { margin: 0 0 16px; color: var(--muted); line-height: 1.45; }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+      color: #03131f;
+      background: var(--accent);
+      box-shadow: 0 8px 22px rgba(56,189,248,.22);
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: rgba(255,255,255,.1);
+      box-shadow: none;
+      border: 1px solid rgba(255,255,255,.13);
+    }
+
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+
+    .side { padding: 18px; }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 58px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 8px;
+      justify-content: center;
+      margin: 10px 0 16px;
+    }
+
+    .dpad button { padding: 0; font-size: 1.2rem; }
+    .dpad .up { grid-column: 2; grid-row: 1; }
+    .dpad .left { grid-column: 1; grid-row: 2; }
+    .dpad .right { grid-column: 3; grid-row: 2; }
+    .dpad .down { grid-column: 2; grid-row: 3; }
+
+    .info-box {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 18px;
+      padding: 14px;
+      margin-top: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: .95rem;
+    }
+
+    .info-box b { color: var(--text); }
+
+    #lastMessage {
+      min-height: 45px;
+      color: #e0f2fe;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: #94a3b8;
+      font-size: .78rem;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 860px) {
+      body { padding: 10px; align-items: start; }
+      .app { grid-template-columns: 1fr; }
+      .side { order: -1; }
+      .controls { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 430px) {
+      .game-card, .side { padding: 12px; }
+      .hud { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+      .hud div { padding: 7px 4px; }
+      .dpad { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 44px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card game-card">
+      <h1>BGL Lehrer-Snake</h1>
+      <p class="subtitle">Iss nur den Apfel mit einem Fach, das zur angezeigten Lehrkraft passt. Beim falschen Fach endet das Spiel.</p>
+
+      <div class="question" aria-live="polite">
+        <div class="teacher-label">Aktuelle Lehrkraft</div>
+        <div id="teacherName">–</div>
+        <div id="promptText">Welches Fach unterrichtet diese Person?</div>
+      </div>
+
+      <div class="hud">
+        <div><span>Punkte</span><strong id="score">0</strong></div>
+        <div><span>Highscore</span><strong id="highscore">0</strong></div>
+        <div><span>Tempo</span><strong id="speedLabel">1×</strong></div>
+      </div>
+
+      <div class="canvas-wrap" id="touchArea">
+        <canvas id="game" width="600" height="600" aria-label="Snake Spielfeld"></canvas>
+        <div class="overlay show" id="overlay">
+          <div class="overlay-box">
+            <h2 id="overlayTitle">Bereit?</h2>
+            <p id="overlayText">Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Buttons.</p>
+            <button id="overlayButton">Spiel starten</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card side">
+      <div id="lastMessage">Tipp: Lies die beiden Fach-Äpfel genau, bevor du abbeißt.</div>
+      <div class="controls">
+        <button id="startBtn">Start / Weiter</button>
+        <button class="secondary" id="pauseBtn">Pause</button>
+        <button class="secondary" id="restartBtn">Neu starten</button>
+        <button class="secondary" id="speedBtn">Tempo erhöhen</button>
+      </div>
+
+      <div class="dpad" aria-label="Steuerkreuz">
+        <button class="secondary up" data-dir="up">▲</button>
+        <button class="secondary left" data-dir="left">◀</button>
+        <button class="secondary right" data-dir="right">▶</button>
+        <button class="secondary down" data-dir="down">▼</button>
+      </div>
+
+      <div class="info-box">
+        <b>Regeln:</b><br>
+        Wähle den Apfel mit dem Fach, das die angezeigte Lehrkraft unterrichtet. Jeder richtige Apfel gibt einen Punkt und verlängert die Schlange. Ein falscher Apfel, die Wand oder der eigene Körper beendet das Spiel.
+      </div>
+      <div class="info-box">
+        <b>Lehrer-Daten ändern:</b><br>
+        Ganz oben im JavaScript findest du die Liste <code>TEACHERS</code>. Dort kannst du Namen und Fächer ergänzen oder korrigieren.
+      </div>
+      <div class="footer-note">
+        Die Startliste ist als Spiel-Datensatz gedacht. Prüfe sie vor einer Veröffentlichung, falls du das Spiel öffentlich teilst.
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    "use strict";
+
+    /*******************************************************************
+     * DATENLISTE
+     * Hier kannst du Lehrerinnen/Lehrer und Fächer ergänzen oder ändern.
+     * Format: { name: "Name", subjects: ["Fach 1", "Fach 2"] }
+     *******************************************************************/
+    const TEACHERS = [
+      { name: "Gülsüm Aktas", subjects: ["Mathematik", "Sozialwissenschaften"] },
+      { name: "Lena Allgayer", subjects: ["Biologie", "Deutsch"] },
+      { name: "Tom Konrad Anton", subjects: ["Chemie", "Sozialwissenschaften"] },
+      { name: "Andrej Artschwager", subjects: ["Mathematik", "Sport", "Russisch"] },
+      { name: "Annika Bacher", subjects: ["Mathematik", "Erdkunde"] },
+      { name: "Jessica Balland", subjects: ["Englisch", "Praktische Philosophie"] },
+      { name: "Harald Bauhaus", subjects: ["Englisch", "Französisch"] },
+      { name: "Katharina Bayerschen", subjects: ["Deutsch", "Praktische Philosophie"] },
+      { name: "Jan Becker", subjects: ["Chemie", "Biologie"] },
+      { name: "Kerstin Bonn-Thews", subjects: ["Deutsch", "Katholische Religion"] },
+      { name: "Michael Cegledi", subjects: ["Französisch", "Sport"] },
+      { name: "Kristin Dee", subjects: ["Deutsch", "Englisch"] },
+      { name: "Dr. Cathrin Degen", subjects: ["Chemie", "Mathematik", "Informatik"] },
+      { name: "Sebastian Matthias Degen", subjects: ["Deutsch", "Englisch", "Geschichte"] },
+      { name: "Jessica Erdmann", subjects: ["Biologie", "Deutsch"] },
+      { name: "Dr. Annette Ernst-Fabian", subjects: ["Geschichte", "Russisch"] },
+      { name: "Adrian Eussen", subjects: ["Mathematik", "Physik"] },
+      { name: "Sebastian Diel", subjects: ["Musik", "Physik"] },
+      { name: "Sally Charleen Gleim", subjects: ["Mathematik", "Sport"] },
+      { name: "Carsten Haase", subjects: ["Französisch", "Geschichte"] },
+      { name: "Christian Hock", subjects: ["Mathematik", "Sozialwissenschaften"] },
+      { name: "Vladislava Heinen", subjects: ["Englisch", "Musik"] },
+      { name: "Marion Ittmann", subjects: ["Deutsch", "Englisch"] },
+      { name: "Dorothee Klinger", subjects: ["Evangelische Religion", "Pädagogik"] },
+      { name: "Mara Klusemann", subjects: ["Deutsch", "Erdkunde"] },
+      { name: "Simon Klüttermann", subjects: ["Deutsch", "Sozialwissenschaften"] },
+      { name: "Christian Knaup", subjects: ["Musik"] },
+      { name: "Lisa Koopmann", subjects: ["Deutsch", "Erdkunde", "Kunst"] },
+      { name: "Tobias Kortner", subjects: ["Biologie", "Sozialwissenschaften"] },
+      { name: "Michael Kommerscheidt", subjects: ["Physik", "Sport"] },
+      { name: "Frauke Lobin", subjects: ["Englisch", "Geschichte"] },
+      { name: "Bernd Mai", subjects: ["Russisch", "Sport"] },
+      { name: "Patrick Michels", subjects: ["Englisch", "Sport"] },
+      { name: "Candida Lenders", subjects: ["Englisch", "Kunst"] },
+      { name: "Cornelia Meißner", subjects: ["Englisch", "Latein"] },
+      { name: "Svetlana Molkuts", subjects: ["Mathematik", "Physik"] },
+      { name: "Annika Monz", subjects: ["Französisch", "Pädagogik", "Musik"] },
+      { name: "Sandra Müller-Lück", subjects: ["Deutsch", "Kunst", "Mathematik"] },
+      { name: "Lena Pieper", subjects: ["Französisch", "Musik"] },
+      { name: "Joachim Ost", subjects: ["Evangelische Religion", "Latein", "Griechisch"] },
+      { name: "Jonathan Otters", subjects: ["Englisch", "Erdkunde"] },
+      { name: "Stefanie Pohl", subjects: ["Deutsch", "DaF", "Katholische Religion", "Geschichte"] },
+      { name: "Julia Pütz", subjects: ["Deutsch", "Geschichte"] },
+      { name: "Patrick Raatz", subjects: ["Physik", "Sport"] },
+      { name: "Britta Rademacher", subjects: ["Chemie", "Englisch"] },
+      { name: "Martina Rafflenbeul", subjects: ["Geschichte", "Kunst"] },
+      { name: "Franziska Reißner", subjects: ["Biologie", "Musik"] },
+      { name: "Stefan Rittinghaus", subjects: ["Sozialwissenschaften", "Deutsch", "Evangelische Religion"] },
+      { name: "Ralf Rüther", subjects: ["Mathematik", "Sport"] },
+      { name: "Kirsten Ronczkowski", subjects: ["Französisch", "Geschichte"] },
+      { name: "Klaus Röver", subjects: ["Mathematik", "Sozialwissenschaften"] },
+      { name: "Elena Rolleri", subjects: ["Englisch", "Sport"] },
+      { name: "Raoul Scheppat", subjects: ["Latein", "Philosophie"] },
+      { name: "Roland Schettler", subjects: ["Biologie", "Evangelische Religion"] },
+      { name: "Franziska Schubert", subjects: ["Französisch", "Sport"] },
+      { name: "Jan Schulte Holthausen", subjects: ["Deutsch", "Philosophie"] },
+      { name: "Tobias Schwarz", subjects: ["Mathematik", "Musik", "Evangelische Religion"] },
+      { name: "Dr. Dietmar Simon", subjects: ["Deutsch", "Geschichte"] },
+      { name: "Elisa Stoffers-Schumacher", subjects: ["Deutsch", "Englisch", "Evangelische Religion"] },
+      { name: "Jan-Henrik Sträßer", subjects: ["Sport", "Englisch"] },
+      { name: "Dieter Utsch", subjects: ["Deutsch", "Evangelische Religion"] },
+      { name: "Miriam Vogel", subjects: ["Mathematik", "Sozialwissenschaften"] },
+      { name: "Gabriele Hildegard Waldow", subjects: ["Biologie", "Geschichte", "Katholische Religion"] },
+      { name: "Sujata Simone Widera", subjects: ["Deutsch", "Latein", "Katholische Religion"] },
+      { name: "Stefan Wilks", subjects: ["Mathematik", "Physik"] },
+      { name: "Natascha Winter", subjects: ["Englisch", "Musik"] },
+      { name: "Ulrich Wohlers", subjects: ["Erdkunde", "Mathematik"] },
+      { name: "Valentina Arucevic", subjects: ["Deutsch", "Englisch"] },
+      { name: "Emine Erbek", subjects: ["Englisch", "Kunst"] },
+      { name: "Alan Jalal Chooqee", subjects: ["Pädagogik", "Philosophie"] },
+      { name: "Christopher Timothy Schötten", subjects: ["Erdkunde", "Evangelische Religion"] }
+    ];
+
+    const EXTRA_WRONG_SUBJECTS = ["Spanisch", "Informatik", "Griechisch", "DaF"];
+
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const teacherNameEl = document.getElementById("teacherName");
+    const scoreEl = document.getElementById("score");
+    const highscoreEl = document.getElementById("highscore");
+    const speedLabelEl = document.getElementById("speedLabel");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayText = document.getElementById("overlayText");
+    const overlayButton = document.getElementById("overlayButton");
+    const lastMessage = document.getElementById("lastMessage");
+    const touchArea = document.getElementById("touchArea");
+
+    const GRID = 24;
+    const CELL = canvas.width / GRID;
+    const STORAGE_KEY = "bgl-lehrer-snake-highscore";
+    const SPEEDS = [145, 120, 100, 84, 70];
+
+    const allSubjects = [...new Set(
+      TEACHERS.flatMap(t => t.subjects).concat(EXTRA_WRONG_SUBJECTS)
+    )].sort((a, b) => a.localeCompare(b, "de"));
+
+    let snake;
+    let direction;
+    let pendingDirection;
+    let currentTeacher;
+    let correctFood;
+    let wrongFood;
+    let score = 0;
+    let highscore = Number(localStorage.getItem(STORAGE_KEY) || 0);
+    let gameState = "ready"; // ready, playing, paused, over
+    let timer = null;
+    let speedIndex = 0;
+    let lastTeacherName = null;
+
+    highscoreEl.textContent = String(highscore);
+    speedLabelEl.textContent = `${speedIndex + 1}×`;
+
+    function chooseRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function sameCell(a, b) {
+      return a.x === b.x && a.y === b.y;
+    }
+
+    function randomEmptyCell(blocked = []) {
+      for (let tries = 0; tries < 1000; tries++) {
+        const cell = {
+          x: Math.floor(Math.random() * GRID),
+          y: Math.floor(Math.random() * GRID)
+        };
+        const isBlocked = blocked.some(b => sameCell(cell, b));
+        if (!isBlocked) return cell;
+      }
+      return { x: 1, y: 1 };
+    }
+
+    function pickTeacher() {
+      let t = chooseRandom(TEACHERS);
+      if (TEACHERS.length > 1) {
+        while (t.name === lastTeacherName) t = chooseRandom(TEACHERS);
+      }
+      lastTeacherName = t.name;
+      return t;
+    }
+
+    function makeQuestion() {
+      currentTeacher = pickTeacher();
+      teacherNameEl.textContent = currentTeacher.name;
+
+      const correctSubject = chooseRandom(currentTeacher.subjects);
+      const wrongCandidates = allSubjects.filter(s => !currentTeacher.subjects.includes(s));
+      const wrongSubject = chooseRandom(wrongCandidates);
+
+      const occupied = [...snake];
+      const a = randomEmptyCell(occupied);
+      const b = randomEmptyCell(occupied.concat([a]));
+
+      if (Math.random() < 0.5) {
+        correctFood = { ...a, subject: correctSubject, kind: "correct" };
+        wrongFood = { ...b, subject: wrongSubject, kind: "wrong" };
+      } else {
+        correctFood = { ...b, subject: correctSubject, kind: "correct" };
+        wrongFood = { ...a, subject: wrongSubject, kind: "wrong" };
+      }
+    }
+
+    function resetGame() {
+      clearInterval(timer);
+      timer = null;
+      snake = [
+        { x: 11, y: 12 },
+        { x: 10, y: 12 },
+        { x: 9, y: 12 }
+      ];
+      direction = { x: 1, y: 0 };
+      pendingDirection = { x: 1, y: 0 };
+      score = 0;
+      scoreEl.textContent = "0";
+      gameState = "ready";
+      makeQuestion();
+      lastMessage.textContent = "Tipp: Lies die beiden Fach-Äpfel genau, bevor du abbeißt.";
+      showOverlay("Bereit?", "Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Buttons.", "Spiel starten");
+      draw();
+    }
+
+    function startGame() {
+      if (gameState === "over") resetGame();
+      gameState = "playing";
+      hideOverlay();
+      if (timer) clearInterval(timer);
+      timer = setInterval(tick, SPEEDS[speedIndex]);
+    }
+
+    function pauseGame() {
+      if (gameState !== "playing") return;
+      gameState = "paused";
+      clearInterval(timer);
+      timer = null;
+      showOverlay("Pause", "Drücke Start / Weiter, um weiterzuspielen.", "Weiter");
+    }
+
+    function gameOver(message) {
+      gameState = "over";
+      clearInterval(timer);
+      timer = null;
+      if (score > highscore) {
+        highscore = score;
+        localStorage.setItem(STORAGE_KEY, String(highscore));
+        highscoreEl.textContent = String(highscore);
+        message += " Neuer Highscore!";
+      }
+      lastMessage.textContent = message;
+      const taught = currentTeacher.subjects.join(", ");
+      showOverlay("Spiel vorbei", `${message}\n\n${currentTeacher.name} unterrichtet: ${taught}.`, "Nochmal spielen");
+      draw();
+    }
+
+    function setDirection(name) {
+      const map = {
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
+      };
+      const next = map[name];
+      if (!next) return;
+      if (gameState === "ready" || gameState === "paused") startGame();
+      if (gameState !== "playing") return;
+
+      // Direktes Umkehren verhindern, sobald die Schlange länger ist.
+      if (snake.length > 1 && next.x === -direction.x && next.y === -direction.y) return;
+      pendingDirection = next;
+    }
+
+    function tick() {
+      direction = pendingDirection;
+      const head = snake[0];
+      const newHead = { x: head.x + direction.x, y: head.y + direction.y };
+
+      if (newHead.x < 0 || newHead.x >= GRID || newHead.y < 0 || newHead.y >= GRID) {
+        gameOver("Die Schlange ist gegen die Wand gelaufen.");
+        return;
+      }
+
+      if (snake.some(part => sameCell(part, newHead))) {
+        gameOver("Die Schlange hat sich selbst gebissen.");
+        return;
+      }
+
+      snake.unshift(newHead);
+
+      if (sameCell(newHead, wrongFood)) {
+        gameOver(`Falscher Apfel: ${wrongFood.subject} passt hier nicht.`);
+        return;
+      }
+
+      if (sameCell(newHead, correctFood)) {
+        score++;
+        scoreEl.textContent = String(score);
+        lastMessage.textContent = `Richtig! ${currentTeacher.name}: ${correctFood.subject}.`;
+        makeQuestion();
+      } else {
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    function showOverlay(title, text, buttonText) {
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      overlayButton.textContent = buttonText;
+      overlay.classList.add("show");
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove("show");
+    }
+
+    function roundedRect(x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBoard();
+      // Beide Äpfel sehen absichtlich gleich aus.
+      // Man soll den richtigen Apfel nur am Fach erkennen, nicht an der Farbe.
+      drawFood(correctFood, "#ef4444", "#7f1d1d");
+      drawFood(wrongFood, "#ef4444", "#7f1d1d");
+      drawSnake();
+    }
+
+    function drawBoard() {
+      ctx.fillStyle = "#07111f";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(255,255,255,.055)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= GRID; i++) {
+        const p = i * CELL;
+        ctx.beginPath();
+        ctx.moveTo(p, 0);
+        ctx.lineTo(p, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, p);
+        ctx.lineTo(canvas.width, p);
+        ctx.stroke();
+      }
+    }
+
+    function drawSnake() {
+      snake.forEach((part, i) => {
+        const pad = i === 0 ? 2 : 3;
+        const x = part.x * CELL + pad;
+        const y = part.y * CELL + pad;
+        const size = CELL - pad * 2;
+        ctx.fillStyle = i === 0 ? "#bef264" : "#84cc16";
+        roundedRect(x, y, size, size, 8);
+        ctx.fill();
+        if (i === 0) {
+          ctx.fillStyle = "#1a2e05";
+          const eyeR = 2.4;
+          const ex1 = x + size * 0.35 + direction.x * 2;
+          const ey1 = y + size * 0.35 + direction.y * 2;
+          const ex2 = x + size * 0.65 + direction.x * 2;
+          const ey2 = y + size * 0.35 + direction.y * 2;
+          ctx.beginPath(); ctx.arc(ex1, ey1, eyeR, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(ex2, ey2, eyeR, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+    }
+
+    function drawFood(food, fill, dark) {
+      if (!food) return;
+      const cx = food.x * CELL + CELL / 2;
+      const cy = food.y * CELL + CELL / 2;
+
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(cx, cy + 1, CELL * 0.36, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = dark;
+      ctx.beginPath();
+      ctx.ellipse(cx + CELL * 0.12, cy - CELL * 0.33, CELL * 0.09, CELL * 0.18, 0.65, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawFoodLabel(food, fill);
+    }
+
+    function drawFoodLabel(food, borderColor) {
+      const text = food.subject;
+      const maxChars = 16;
+      const words = text.split(/\s+/);
+      const lines = [];
+      let line = "";
+      words.forEach(word => {
+        const proposed = line ? `${line} ${word}` : word;
+        if (proposed.length > maxChars && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = proposed;
+        }
+      });
+      if (line) lines.push(line);
+
+      ctx.font = "bold 13px system-ui, -apple-system, Segoe UI, sans-serif";
+      const widths = lines.map(l => ctx.measureText(l).width);
+      const w = Math.min(148, Math.max(58, Math.max(...widths) + 18));
+      const h = 20 + (lines.length - 1) * 15;
+      let x = food.x * CELL + CELL / 2 - w / 2;
+      let y = food.y * CELL - h - 4;
+      if (y < 3) y = food.y * CELL + CELL + 4;
+      x = Math.max(3, Math.min(canvas.width - w - 3, x));
+      y = Math.max(3, Math.min(canvas.height - h - 3, y));
+
+      ctx.fillStyle = "rgba(2,6,23,.92)";
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 2;
+      roundedRect(x, y, w, h, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#f8fafc";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      lines.forEach((l, i) => {
+        ctx.fillText(l, x + w / 2, y + 10 + i * 15);
+      });
+      ctx.textAlign = "start";
+      ctx.textBaseline = "alphabetic";
+    }
+
+    overlayButton.addEventListener("click", startGame);
+    document.getElementById("startBtn").addEventListener("click", startGame);
+    document.getElementById("pauseBtn").addEventListener("click", pauseGame);
+    document.getElementById("restartBtn").addEventListener("click", resetGame);
+    document.getElementById("speedBtn").addEventListener("click", () => {
+      speedIndex = (speedIndex + 1) % SPEEDS.length;
+      speedLabelEl.textContent = `${speedIndex + 1}×`;
+      if (gameState === "playing") {
+        clearInterval(timer);
+        timer = setInterval(tick, SPEEDS[speedIndex]);
+      }
+    });
+
+    document.querySelectorAll(".dpad button").forEach(btn => {
+      btn.addEventListener("click", () => setDirection(btn.dataset.dir));
+    });
+
+    window.addEventListener("keydown", e => {
+      const keyMap = {
+        ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+        w: "up", W: "up", s: "down", S: "down", a: "left", A: "left", d: "right", D: "right"
+      };
+      if (keyMap[e.key]) {
+        e.preventDefault();
+        setDirection(keyMap[e.key]);
+      } else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        if (gameState === "playing") pauseGame(); else startGame();
+      }
+    }, { passive: false });
+
+    let touchStart = null;
+    touchArea.addEventListener("touchstart", e => {
+      const t = e.changedTouches[0];
+      touchStart = { x: t.clientX, y: t.clientY };
+    }, { passive: true });
+
+    touchArea.addEventListener("touchmove", e => {
+      // verhindert Scrollen während des Spielens über dem Spielfeld
+      if (gameState === "playing") e.preventDefault();
+    }, { passive: false });
+
+    touchArea.addEventListener("touchend", e => {
+      if (!touchStart) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStart.x;
+      const dy = t.clientY - touchStart.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+      if (Math.abs(dx) > Math.abs(dy)) setDirection(dx > 0 ? "right" : "left");
+      else setDirection(dy > 0 ? "down" : "up");
+      touchStart = null;
+    }, { passive: true });
+
+    resetGame();
+  </script>
+</body>
+</html>
