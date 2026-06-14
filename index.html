@@ -39,9 +39,9 @@
     }
 
     .app {
-      width: min(960px, 100%);
+      width: min(680px, 100%);
       display: grid;
-      grid-template-columns: minmax(320px, 640px) minmax(250px, 1fr);
+      grid-template-columns: 1fr;
       gap: 18px;
       align-items: start;
     }
@@ -249,12 +249,11 @@
     @media (max-width: 860px) {
       body { padding: 10px; align-items: start; }
       .app { grid-template-columns: 1fr; }
-      .side { order: -1; }
       .controls { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 430px) {
-      .game-card, .side { padding: 12px; }
+      .game-card { padding: 12px; }
       .hud { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
       .hud div { padding: 7px 4px; }
       .dpad { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 44px); }
@@ -284,41 +283,12 @@
         <div class="overlay show" id="overlay">
           <div class="overlay-box">
             <h2 id="overlayTitle">Bereit?</h2>
-            <p id="overlayText">Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Buttons.</p>
+            <p id="overlayText">Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD oder Wischbewegungen auf dem Spielfeld.</p>
             <button id="overlayButton">Spiel starten</button>
           </div>
         </div>
       </div>
     </section>
-
-    <aside class="card side">
-      <div id="lastMessage">Tipp: Lies die beiden Fach-Äpfel genau, bevor du abbeißt.</div>
-      <div class="controls">
-        <button id="startBtn">Start / Weiter</button>
-        <button class="secondary" id="pauseBtn">Pause</button>
-        <button class="secondary" id="restartBtn">Neu starten</button>
-        <button class="secondary" id="speedBtn">Tempo erhöhen</button>
-      </div>
-
-      <div class="dpad" aria-label="Steuerkreuz">
-        <button class="secondary up" data-dir="up">▲</button>
-        <button class="secondary left" data-dir="left">◀</button>
-        <button class="secondary right" data-dir="right">▶</button>
-        <button class="secondary down" data-dir="down">▼</button>
-      </div>
-
-      <div class="info-box">
-        <b>Regeln:</b><br>
-        Wähle den Apfel mit dem Fach, das die angezeigte Lehrkraft unterrichtet. Jeder richtige Apfel gibt einen Punkt und verlängert die Schlange. Ein falscher Apfel, die Wand oder der eigene Körper beendet das Spiel.
-      </div>
-      <div class="info-box">
-        <b>Lehrer-Daten ändern:</b><br>
-        Ganz oben im JavaScript findest du die Liste <code>TEACHERS</code>. Dort kannst du Namen und Fächer ergänzen oder korrigieren.
-      </div>
-      <div class="footer-note">
-        Die Startliste ist als Spiel-Datensatz gedacht. Prüfe sie vor einer Veröffentlichung, falls du das Spiel öffentlich teilst.
-      </div>
-    </aside>
   </main>
 
   <script>
@@ -443,6 +413,10 @@
     highscoreEl.textContent = String(highscore);
     speedLabelEl.textContent = `${speedIndex + 1}×`;
 
+    function setStatus(message) {
+      if (lastMessage) lastMessage.textContent = message;
+    }
+
     function chooseRandom(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
     }
@@ -507,8 +481,8 @@
       scoreEl.textContent = "0";
       gameState = "ready";
       makeQuestion();
-      lastMessage.textContent = "Tipp: Lies die beiden Fach-Äpfel genau, bevor du abbeißt.";
-      showOverlay("Bereit?", "Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Buttons.", "Spiel starten");
+      setStatus("Tipp: Lies die beiden Fach-Äpfel genau, bevor du abbeißt.");
+      showOverlay("Bereit?", "Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD oder Wischbewegungen auf dem Spielfeld.", "Spiel starten");
       draw();
     }
 
@@ -538,7 +512,7 @@
         highscoreEl.textContent = String(highscore);
         message += " Neuer Highscore!";
       }
-      lastMessage.textContent = message;
+      setStatus(message);
       const taught = currentTeacher.subjects.join(", ");
       showOverlay("Spiel vorbei", `${message}\n\n${currentTeacher.name} unterrichtet: ${taught}.`, "Nochmal spielen");
       draw();
@@ -586,7 +560,7 @@
       if (sameCell(newHead, correctFood)) {
         score++;
         scoreEl.textContent = String(score);
-        lastMessage.textContent = `Richtig! ${currentTeacher.name}: ${correctFood.subject}.`;
+        setStatus(`Richtig! ${currentTeacher.name}: ${correctFood.subject}.`);
         makeQuestion();
       } else {
         snake.pop();
@@ -731,10 +705,10 @@
     }
 
     overlayButton.addEventListener("click", startGame);
-    document.getElementById("startBtn").addEventListener("click", startGame);
-    document.getElementById("pauseBtn").addEventListener("click", pauseGame);
-    document.getElementById("restartBtn").addEventListener("click", resetGame);
-    document.getElementById("speedBtn").addEventListener("click", () => {
+    document.getElementById("startBtn")?.addEventListener("click", startGame);
+    document.getElementById("pauseBtn")?.addEventListener("click", pauseGame);
+    document.getElementById("restartBtn")?.addEventListener("click", resetGame);
+    document.getElementById("speedBtn")?.addEventListener("click", () => {
       speedIndex = (speedIndex + 1) % SPEEDS.length;
       speedLabelEl.textContent = `${speedIndex + 1}×`;
       if (gameState === "playing") {
