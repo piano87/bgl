@@ -206,18 +206,23 @@
 
     .dpad {
       display: grid;
-      grid-template-columns: repeat(3, 58px);
-      grid-template-rows: repeat(3, 48px);
-      gap: 8px;
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(2, 50px);
+      gap: 9px;
       justify-content: center;
-      margin: 10px 0 16px;
+      margin: 14px 0 2px;
     }
 
-    .dpad button { padding: 0; font-size: 1.2rem; }
+    .dpad button {
+      padding: 0;
+      font-size: 1.35rem;
+      touch-action: manipulation;
+      user-select: none;
+    }
     .dpad .up { grid-column: 2; grid-row: 1; }
     .dpad .left { grid-column: 1; grid-row: 2; }
+    .dpad .down { grid-column: 2; grid-row: 2; }
     .dpad .right { grid-column: 3; grid-row: 2; }
-    .dpad .down { grid-column: 2; grid-row: 3; }
 
     .info-box {
       background: rgba(255,255,255,.06);
@@ -256,7 +261,7 @@
       .game-card { padding: 12px; }
       .hud { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
       .hud div { padding: 7px 4px; }
-      .dpad { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 44px); }
+      .dpad { grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(2, 46px); }
     }
   </style>
 </head>
@@ -283,10 +288,17 @@
         <div class="overlay show" id="overlay">
           <div class="overlay-box">
             <h2 id="overlayTitle">Bereit?</h2>
-            <p id="overlayText">Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD oder Wischbewegungen auf dem Spielfeld.</p>
+            <p id="overlayText">Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Pfeilbuttons unter dem Spielfeld.</p>
             <button id="overlayButton">Spiel starten</button>
           </div>
         </div>
+      </div>
+
+      <div class="dpad" aria-label="Pfeilsteuerung">
+        <button class="secondary up" type="button" data-dir="up" aria-label="Nach oben">↑</button>
+        <button class="secondary left" type="button" data-dir="left" aria-label="Nach links">←</button>
+        <button class="secondary down" type="button" data-dir="down" aria-label="Nach unten">↓</button>
+        <button class="secondary right" type="button" data-dir="right" aria-label="Nach rechts">→</button>
       </div>
     </section>
   </main>
@@ -414,7 +426,7 @@
     speedLabelEl.textContent = `${speedIndex + 1}×`;
 
     function setStatus(message) {
-      if (lastMessage) lastMessage.textContent = message;
+      if (lastMessage) setStatus(message);
     }
 
     function chooseRandom(arr) {
