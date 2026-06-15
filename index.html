@@ -8,15 +8,13 @@
     :root {
       --bg: #0f172a;
       --panel: #111827;
-      --panel2: #1f2937;
       --text: #f8fafc;
       --muted: #cbd5e1;
       --accent: #38bdf8;
-      --good: #22c55e;
-      --bad: #ef4444;
-      --snake: #a3e635;
-      --snake2: #65a30d;
-      --grid: rgba(255,255,255,0.055);
+      --snake-head: #bef264;
+      --snake-body: #84cc16;
+      --apple: #ef4444;
+      --apple-dark: #7f1d1d;
       --shadow: 0 20px 60px rgba(0,0,0,.35);
     }
 
@@ -39,25 +37,23 @@
     }
 
     .app {
-      width: min(680px, 100%);
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 18px;
-      align-items: start;
+      width: min(640px, 100%);
+      margin: 0 auto;
     }
 
-    .card {
+    .game-card {
+      width: 100%;
       background: linear-gradient(180deg, rgba(17,24,39,.95), rgba(15,23,42,.95));
       border: 1px solid rgba(255,255,255,.12);
       border-radius: 24px;
       box-shadow: var(--shadow);
+      padding: 16px;
       overflow: hidden;
     }
 
-    .game-card { padding: 16px; }
-
     h1 {
       margin: 0 0 6px;
+      text-align: center;
       font-size: clamp(1.45rem, 3vw, 2.25rem);
       letter-spacing: -0.03em;
     }
@@ -65,6 +61,7 @@
     .subtitle {
       margin: 0 0 14px;
       color: var(--muted);
+      text-align: center;
       line-height: 1.35;
       font-size: .95rem;
     }
@@ -171,7 +168,7 @@
     }
 
     .overlay h2 { margin: 0 0 8px; }
-    .overlay p { margin: 0 0 16px; color: var(--muted); line-height: 1.45; }
+    .overlay p { margin: 0 0 16px; color: var(--muted); line-height: 1.45; white-space: pre-line; }
 
     button {
       border: 0;
@@ -183,6 +180,8 @@
       color: #03131f;
       background: var(--accent);
       box-shadow: 0 8px 22px rgba(56,189,248,.22);
+      touch-action: manipulation;
+      user-select: none;
     }
 
     button.secondary {
@@ -195,79 +194,33 @@
     button:hover { filter: brightness(1.08); }
     button:active { transform: translateY(1px); }
 
-    .side { padding: 18px; }
-
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin: 14px 0;
-    }
-
     .dpad {
       display: grid;
-      grid-template-columns: repeat(3, 64px);
-      grid-template-rows: repeat(2, 50px);
-      gap: 9px;
+      grid-template-columns: repeat(3, 58px);
+      grid-template-rows: repeat(2, 48px);
+      gap: 8px;
       justify-content: center;
-      margin: 14px 0 2px;
+      margin: 14px 0 0;
     }
 
-    .dpad button {
-      padding: 0;
-      font-size: 1.35rem;
-      touch-action: manipulation;
-      user-select: none;
-    }
+    .dpad button { padding: 0; font-size: 1.2rem; }
     .dpad .up { grid-column: 2; grid-row: 1; }
     .dpad .left { grid-column: 1; grid-row: 2; }
     .dpad .down { grid-column: 2; grid-row: 2; }
     .dpad .right { grid-column: 3; grid-row: 2; }
 
-    .info-box {
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 18px;
-      padding: 14px;
-      margin-top: 12px;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: .95rem;
-    }
-
-    .info-box b { color: var(--text); }
-
-    #lastMessage {
-      min-height: 45px;
-      color: #e0f2fe;
-      font-weight: 700;
-      line-height: 1.35;
-    }
-
-    .footer-note {
-      margin-top: 14px;
-      color: #94a3b8;
-      font-size: .78rem;
-      line-height: 1.35;
-    }
-
-    @media (max-width: 860px) {
-      body { padding: 10px; align-items: start; }
-      .app { grid-template-columns: 1fr; }
-      .controls { grid-template-columns: 1fr 1fr; }
-    }
-
     @media (max-width: 430px) {
+      body { padding: 10px; align-items: start; }
       .game-card { padding: 12px; }
-      .hud { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+      .hud { gap: 6px; }
       .hud div { padding: 7px 4px; }
-      .dpad { grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(2, 46px); }
+      .dpad { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(2, 44px); }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <section class="card game-card">
+    <section class="game-card">
       <h1>BGL Lehrer-Snake</h1>
       <p class="subtitle">Iss nur den Apfel mit einem Fach, das zur angezeigten Lehrkraft passt. Beim falschen Fach endet das Spiel.</p>
 
@@ -288,17 +241,17 @@
         <div class="overlay show" id="overlay">
           <div class="overlay-box">
             <h2 id="overlayTitle">Bereit?</h2>
-            <p id="overlayText">Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Pfeilbuttons unter dem Spielfeld.</p>
+            <p id="overlayText">Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Buttons.</p>
             <button id="overlayButton">Spiel starten</button>
           </div>
         </div>
       </div>
 
-      <div class="dpad" aria-label="Pfeilsteuerung">
-        <button class="secondary up" type="button" data-dir="up" aria-label="Nach oben">↑</button>
-        <button class="secondary left" type="button" data-dir="left" aria-label="Nach links">←</button>
-        <button class="secondary down" type="button" data-dir="down" aria-label="Nach unten">↓</button>
-        <button class="secondary right" type="button" data-dir="right" aria-label="Nach rechts">→</button>
+      <div class="dpad" aria-label="Steuerkreuz">
+        <button class="secondary up" data-dir="up" aria-label="Nach oben">▲</button>
+        <button class="secondary left" data-dir="left" aria-label="Nach links">◀</button>
+        <button class="secondary down" data-dir="down" aria-label="Nach unten">▼</button>
+        <button class="secondary right" data-dir="right" aria-label="Nach rechts">▶</button>
       </div>
     </section>
   </main>
@@ -397,13 +350,12 @@
     const overlayTitle = document.getElementById("overlayTitle");
     const overlayText = document.getElementById("overlayText");
     const overlayButton = document.getElementById("overlayButton");
-    const lastMessage = document.getElementById("lastMessage");
     const touchArea = document.getElementById("touchArea");
 
     const GRID = 24;
     const CELL = canvas.width / GRID;
     const STORAGE_KEY = "bgl-lehrer-snake-highscore";
-    const SPEEDS = [145, 120, 100, 84, 70];
+    const SPEEDS = [190, 165, 140, 118, 100];
 
     const allSubjects = [...new Set(
       TEACHERS.flatMap(t => t.subjects).concat(EXTRA_WRONG_SUBJECTS)
@@ -417,17 +369,13 @@
     let wrongFood;
     let score = 0;
     let highscore = Number(localStorage.getItem(STORAGE_KEY) || 0);
-    let gameState = "ready"; // ready, playing, paused, over
+    let gameState = "ready";
     let timer = null;
     let speedIndex = 0;
     let lastTeacherName = null;
 
     highscoreEl.textContent = String(highscore);
     speedLabelEl.textContent = `${speedIndex + 1}×`;
-
-    function setStatus(message) {
-      if (lastMessage) setStatus(message);
-    }
 
     function chooseRandom(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
@@ -443,8 +391,7 @@
           x: Math.floor(Math.random() * GRID),
           y: Math.floor(Math.random() * GRID)
         };
-        const isBlocked = blocked.some(b => sameCell(cell, b));
-        if (!isBlocked) return cell;
+        if (!blocked.some(b => sameCell(cell, b))) return cell;
       }
       return { x: 1, y: 1 };
     }
@@ -471,11 +418,11 @@
       const b = randomEmptyCell(occupied.concat([a]));
 
       if (Math.random() < 0.5) {
-        correctFood = { ...a, subject: correctSubject, kind: "correct" };
-        wrongFood = { ...b, subject: wrongSubject, kind: "wrong" };
+        correctFood = { ...a, subject: correctSubject };
+        wrongFood = { ...b, subject: wrongSubject };
       } else {
-        correctFood = { ...b, subject: correctSubject, kind: "correct" };
-        wrongFood = { ...a, subject: wrongSubject, kind: "wrong" };
+        correctFood = { ...b, subject: correctSubject };
+        wrongFood = { ...a, subject: wrongSubject };
       }
     }
 
@@ -493,8 +440,7 @@
       scoreEl.textContent = "0";
       gameState = "ready";
       makeQuestion();
-      setStatus("Tipp: Lies die beiden Fach-Äpfel genau, bevor du abbeißt.");
-      showOverlay("Bereit?", "Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD oder Wischbewegungen auf dem Spielfeld.", "Spiel starten");
+      showOverlay("Bereit?", "Starte das Spiel und steuere die Schlange mit Pfeiltasten, WASD, Wischbewegungen oder den Buttons.", "Spiel starten");
       draw();
     }
 
@@ -502,7 +448,7 @@
       if (gameState === "over") resetGame();
       gameState = "playing";
       hideOverlay();
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
       timer = setInterval(tick, SPEEDS[speedIndex]);
     }
 
@@ -511,7 +457,7 @@
       gameState = "paused";
       clearInterval(timer);
       timer = null;
-      showOverlay("Pause", "Drücke Start / Weiter, um weiterzuspielen.", "Weiter");
+      showOverlay("Pause", "Drücke Enter, Leertaste oder einen Pfeilbutton, um weiterzuspielen.", "Weiter");
     }
 
     function gameOver(message) {
@@ -524,7 +470,6 @@
         highscoreEl.textContent = String(highscore);
         message += " Neuer Highscore!";
       }
-      setStatus(message);
       const taught = currentTeacher.subjects.join(", ");
       showOverlay("Spiel vorbei", `${message}\n\n${currentTeacher.name} unterrichtet: ${taught}.`, "Nochmal spielen");
       draw();
@@ -542,7 +487,6 @@
       if (gameState === "ready" || gameState === "paused") startGame();
       if (gameState !== "playing") return;
 
-      // Direktes Umkehren verhindern, sobald die Schlange länger ist.
       if (snake.length > 1 && next.x === -direction.x && next.y === -direction.y) return;
       pendingDirection = next;
     }
@@ -550,12 +494,10 @@
     function tick() {
       direction = pendingDirection;
       const head = snake[0];
-      const newHead = { x: head.x + direction.x, y: head.y + direction.y };
-
-      if (newHead.x < 0 || newHead.x >= GRID || newHead.y < 0 || newHead.y >= GRID) {
-        gameOver("Die Schlange ist gegen die Wand gelaufen.");
-        return;
-      }
+      const newHead = {
+        x: (head.x + direction.x + GRID) % GRID,
+        y: (head.y + direction.y + GRID) % GRID
+      };
 
       if (snake.some(part => sameCell(part, newHead))) {
         gameOver("Die Schlange hat sich selbst gebissen.");
@@ -572,7 +514,6 @@
       if (sameCell(newHead, correctFood)) {
         score++;
         scoreEl.textContent = String(score);
-        setStatus(`Richtig! ${currentTeacher.name}: ${correctFood.subject}.`);
         makeQuestion();
       } else {
         snake.pop();
@@ -606,17 +547,14 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBoard();
-      // Beide Äpfel sehen absichtlich gleich aus.
-      // Man soll den richtigen Apfel nur am Fach erkennen, nicht an der Farbe.
-      drawFood(correctFood, "#ef4444", "#7f1d1d");
-      drawFood(wrongFood, "#ef4444", "#7f1d1d");
+      drawFood(correctFood);
+      drawFood(wrongFood);
       drawSnake();
     }
 
     function drawBoard() {
       ctx.fillStyle = "#07111f";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       ctx.strokeStyle = "rgba(255,255,255,.055)";
       ctx.lineWidth = 1;
       for (let i = 0; i <= GRID; i++) {
@@ -654,25 +592,25 @@
       });
     }
 
-    function drawFood(food, fill, dark) {
+    function drawFood(food) {
       if (!food) return;
       const cx = food.x * CELL + CELL / 2;
       const cy = food.y * CELL + CELL / 2;
 
-      ctx.fillStyle = fill;
+      ctx.fillStyle = "#ef4444";
       ctx.beginPath();
       ctx.arc(cx, cy + 1, CELL * 0.36, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = dark;
+      ctx.fillStyle = "#7f1d1d";
       ctx.beginPath();
       ctx.ellipse(cx + CELL * 0.12, cy - CELL * 0.33, CELL * 0.09, CELL * 0.18, 0.65, 0, Math.PI * 2);
       ctx.fill();
 
-      drawFoodLabel(food, fill);
+      drawFoodLabel(food);
     }
 
-    function drawFoodLabel(food, borderColor) {
+    function drawFoodLabel(food) {
       const text = food.subject;
       const maxChars = 16;
       const words = text.split(/\s+/);
@@ -700,7 +638,7 @@
       y = Math.max(3, Math.min(canvas.height - h - 3, y));
 
       ctx.fillStyle = "rgba(2,6,23,.92)";
-      ctx.strokeStyle = borderColor;
+      ctx.strokeStyle = "#ef4444";
       ctx.lineWidth = 2;
       roundedRect(x, y, w, h, 8);
       ctx.fill();
@@ -717,17 +655,6 @@
     }
 
     overlayButton.addEventListener("click", startGame);
-    document.getElementById("startBtn")?.addEventListener("click", startGame);
-    document.getElementById("pauseBtn")?.addEventListener("click", pauseGame);
-    document.getElementById("restartBtn")?.addEventListener("click", resetGame);
-    document.getElementById("speedBtn")?.addEventListener("click", () => {
-      speedIndex = (speedIndex + 1) % SPEEDS.length;
-      speedLabelEl.textContent = `${speedIndex + 1}×`;
-      if (gameState === "playing") {
-        clearInterval(timer);
-        timer = setInterval(tick, SPEEDS[speedIndex]);
-      }
-    });
 
     document.querySelectorAll(".dpad button").forEach(btn => {
       btn.addEventListener("click", () => setDirection(btn.dataset.dir));
@@ -754,7 +681,6 @@
     }, { passive: true });
 
     touchArea.addEventListener("touchmove", e => {
-      // verhindert Scrollen während des Spielens über dem Spielfeld
       if (gameState === "playing") e.preventDefault();
     }, { passive: false });
 
@@ -763,10 +689,10 @@
       const t = e.changedTouches[0];
       const dx = t.clientX - touchStart.x;
       const dy = t.clientY - touchStart.y;
+      touchStart = null;
       if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
       if (Math.abs(dx) > Math.abs(dy)) setDirection(dx > 0 ? "right" : "left");
       else setDirection(dy > 0 ? "down" : "up");
-      touchStart = null;
     }, { passive: true });
 
     resetGame();
